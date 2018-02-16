@@ -14,7 +14,25 @@ public class CommandLineApp {
     static String patternHorizontalAngel = "(\\w{2}\\s+)(\\d{1,3}\\.\\d{4})(.*)";
     static String patternVerticalAngel = "(\\w{1}\\d{1}\\s+)(\\d{1,3}\\.\\d{4})(.*)";
 
-    public static void main(String[] args) throws IOException {
+    static String head = "CO,Nikon RAW data format V2.00\n" +
+            "CO,\n" +
+            "CO,Description:\n" +
+            "CO,Client:\n" +
+            "CO,Comments:\n" +
+            "CO,Downloaded 14-01-2018 18:16:29\n" +
+            "CO,Software: Pre-install version: 1.20\n" +
+            "CO,Instrument: Trimble series\n" +
+            "CO,Dist Units: Metres\n" +
+            "CO,Angle Units: DDDMMSS\n" +
+            "CO,Zero azimuth: North\n" +
+            "CO,Zero VA: Zenith\n" +
+            "CO,Coord Order: NEZ\n" +
+            "CO,HA Raw data: Azimuth\n" +
+            "CO,Tilt Correction:  VA:ON HA:ON\n" +
+            "CO, SEDITOR <JOB> Created 14-01-2018 18:16:29\n" +
+            "CO,S/N:000000\n";
+
+    public static void main(String[] args) throws IOException, InterruptedException {
 
 //        String inputFilePath = args[0];
 //        String outputFilePath = args[1];
@@ -26,13 +44,6 @@ public class CommandLineApp {
         String timestamp = getTimestamp();
 
         List<String> lines = getFileLine(inputFilePath);
-        System.out.println(lines.size());
-        System.out.println("---------");
-
-        System.out.println((lines.stream().anyMatch(s -> s.contains("END"))));
-
-
-//        Pattern pointNumberPattern = Pattern.compile(".*END.*");
 //        Pattern pointNumberPattern = Pattern.compile(".*END.*");
 
         int a = 0;
@@ -42,24 +53,76 @@ public class CommandLineApp {
                 a = ++i;
                 break;
             }
+        }
+// add to fileOutPut head stamp;
+        File file = new File(outputFilePath);
+        writeConvertFile(head.toString(), outputFilePath);
 
+        int lastPoint = 0;
+
+        while (lastPoint != lines.size()) {
+
+            StringJoiner destinationLineForStation = new StringJoiner(",", "", "\n");
+            System.out.println("Input number working station ");
+            Scanner scannerWorkingStation = new Scanner(System.in);
+            String numberWorkStation = scannerWorkingStation.next();
+
+            System.out.println("Input number station on direction");
+            Scanner scannerStationDirecting = new Scanner(System.in);
+            String stationOnDirection = scannerStationDirecting.next();
+
+            System.out.println("Input height working station");
+            Scanner scannerStationStayingHeight = new Scanner(System.in);
+            String workStationHeight = scannerStationStayingHeight.next();
+
+            System.out.println("Input height Landmark ");
+            Scanner scannerHeightLandMarkOnThisStation = new Scanner(System.in);
+            String heightLandMark = scannerHeightLandMarkOnThisStation.next();
+
+            System.out.println("Input last point on this station ");
+            Scanner scannerLastPointOnThisStation = new Scanner(System.in);
+            int lastPointOnWorkStation = scannerLastPointOnThisStation.nextInt();
+            lastPoint = lastPointOnWorkStation;
+
+//        System.out.println(numberWorkStation);
+//        System.out.println(stationOnDirection);
+//        System.out.println(workStationHeight);
+//        System.out.println(heightLandMark);
+//        System.out.println(lastPointOnWorkStation);
+
+
+            destinationLineForStation.add("ST")
+                    .add(numberWorkStation)
+                    .add("")
+                    .add(stationOnDirection)
+                    .add("")
+                    .add(workStationHeight)
+                    .add("0.0000")
+                    .add("0.0000");
+            writeConvertFile(destinationLineForStation.toString(), outputFilePath);
+
+            int linesSize = +lastPointOnWorkStation;
+
+            for (int i = a; i < linesSize; i++) {
+                String line = lines.get(i);
+
+                StringJoiner destinationLine = new StringJoiner(",", "", "\n");
+                destinationLine
+                        .add("SS")
+                        .add(parseRawData(getRawData(line, 1), patternNumber))
+                        .add(heightLandMark)
+                        .add(parseRawData(getRawData(line, 3), patternDistance))
+                        .add(parseRawData(getRawData(line, 4), patternHorizontalAngel))
+                        .add(parseRawData(getRawData(line, 5), patternVerticalAngel))
+                        .add(timestamp)
+                        .add("");
+                writeConvertFile(destinationLine.toString(), outputFilePath);
+
+            }
+            a = linesSize + 1;
         }
 
-        for (int i = a; i < lines.size(); i++) {
-            String line = lines.get(i);
 
-            StringJoiner destinationLine = new StringJoiner(",", "", "\n");
-            destinationLine
-                    .add("SS")
-                    .add(parseRawData(getRawData(line, 1), patternNumber))
-                    .add("0")
-                    .add(parseRawData(getRawData(line, 3), patternDistance))
-                    .add(parseRawData(getRawData(line, 4), patternHorizontalAngel))
-                    .add(parseRawData(getRawData(line, 5), patternVerticalAngel))
-                    .add(timestamp)
-                    .add("");
-            writeConvertFile(destinationLine.toString(), outputFilePath);
-        }
     }
 
     private static String getRawData(String line, int position) {
@@ -112,4 +175,6 @@ public class CommandLineApp {
             bw.write(line);
         }
     }
+
+
 }
