@@ -33,6 +33,7 @@ public class CommandLineApp {
 
 
 //        Pattern pointNumberPattern = Pattern.compile(".*END.*");
+//        Pattern pointNumberPattern = Pattern.compile(".*END.*");
 
         int a = 0;
         for (int i = 0; i < lines.size(); i++) {
